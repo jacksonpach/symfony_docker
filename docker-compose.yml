@@ -1,0 +1,45 @@
+version: "3"
+
+services:
+  webserver:
+    image: nginx:alpine
+    container_name: ${APP}-webserver
+    working_dir: /mnt/app
+    volumes:
+      - "./app:/mnt/app"
+      - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/main.conf
+    ports:
+      - "${APP_PORT}:8006"
+    depends_on:
+      - database
+
+  php-fpm:
+    build: docker/php-fpm
+    container_name: ${APP}-php-fpm
+    working_dir: /mnt/app/
+    volumes:
+      - ./app:/mnt/app/
+      - ./docker/php-fpm/${PHP_INI_OVERRIDES}:/etc/php/8.0/fpm/conf.d/99-overrides.ini
+
+  database:
+    build: docker/data
+    container_name: ${APP}-database
+    working_dir: /mnt/app
+    volumes:
+      - ./docker/mysql:/var/lib/mysql
+    user: mysql
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${DB_DATABASE}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "43306:3306"
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8090:8080"
+
